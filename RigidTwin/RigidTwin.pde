@@ -30,10 +30,14 @@ void draw() {      // executed at each frame
   
   if(animating) {t+=0.01; if(t>=1) {t=1; animating=false;}} 
   for (int i=0;i<P.nv;++i) {
-    pen(blue, 5); P.G[i].show();
-    pen(green, 5); if (i%2==0 && i+1!=P.nv) P.G[i].show(n(V(P.G[i+1], P.G[i])));
+    if (i%2==0) {pen(blue, 5); P.G[i].show(); P.G[i].label(""+i/2);}
+   // pen(green, 5); if (i%2==0 && i+1!=P.nv) P.G[i].show(n(V(P.G[i+1], P.G[i])));
     }
     
+  for (int i=1;i<10;++i) {
+    pt extrPt = extrapolateTo(P.nv/2+i);
+    pen(pink, 5); extrPt.show(); extrPt.label(""+P.nv/2+i);
+    }
   pen(red, 5); P.G[P.pv].show();
   if(snapPic) {endRecord(); snapPic=false;} // end saving a .pdf of the screen
 
@@ -86,6 +90,27 @@ void insertPt() {  // executed when the mouse is pressed
   System.out.println("HI");
   change=true;
   }
+
+pt extrapolateTo(int x) {
+  pt nodes[] = P.G;
+  int n = P.nv/2;
+  
+  float extrapolatedx = 0.f;
+  float extrapolatedy = 0.f;
+  for (int i=0;i<n;++i) {
+    float temp = 1;
+    for (int j=0;j<n;++j) {
+      if (i!=j) {
+        temp = temp*(x-j-1)/(i+1-j-1);
+        }
+      }
+    extrapolatedx += nodes[i*2].x*temp;
+    extrapolatedy += nodes[i*2].y*temp;
+    }
+  System.out.println("P:" + extrapolatedx + " " + extrapolatedy);
+  return P(extrapolatedx, extrapolatedy);
+  }
+
 
 //**************************** text for name, title and help  ****************************
 String title ="CA 2015 P1: Interpolation", 
