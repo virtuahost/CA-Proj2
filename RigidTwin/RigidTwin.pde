@@ -1,44 +1,78 @@
 // LecturesInGraphics: vector interpolation
 // Template for sketches
 // Author: James Moak, Deep Ghosh
-// Computational Aesthetics: Project 1 
+// Computational Aesthetics: Project 2 
 
 //**************************** global variables ****************************
 pts P = new pts();
-float t=1, f=0;
-Boolean animate=true, linear=true, circular=true, beautiful=false, car=false, jarek=false, hermite=false;
-PImage textureSource, jarekImg;
+int numPts = 3;
+float t=numPts, f=0, rot = 2.0;
+Boolean animate=true, control=true, party=false;
 float len=60; // length of arrows
 //**************************** initialization ****************************
 void setup() {               // executed once at the begining 
-  size(1000,800, P3D);            // window size
+  size(800,600);            // window size
   frameRate(30);             // render 30 frames per second
   smooth();                  // turn on antialiasing
   myFace = loadImage("data/group.jpg");  // load image from file pic.jpg in folder data *** replace that file with your pic of your own face
-  textureSource = loadImage("data/car.jpg");
-  jarekImg = loadImage("data/jarek.jpg");
-  P.declare().resetOnCircle(3);
-  P.loadPts("data/pts");
-  textureMode(NORMAL);
+  P.declare();
+  P.addPt(P(400,100));
+  P.addPt(P(P.G[0].x + 50.0, P.G[0].y));
+  P.addPt(P(P.G[0].x + 100.0, P.G[0].y));
+  P.addPt(P(400,100));
+  P.addPt(P(227,400));
+  P.addPt(P(573,400));
   }
-
+                                                          
 //**************************** display current frame ****************************
 void draw() {      // executed at each frame
   background(white); // clear screen and paints white background
   if(snapPic) beginRecord(PDF,PicturesOutputPath+"/P"+nf(pictureCounter++,3)+".pdf"); 
   noStroke(); 
   
-  if(animating) {t+=0.01; if(t>=1) {t=1; animating=false;}} 
-  for (int i=0;i<P.nv;++i) {
-    if (i%2==0) {pen(blue, 5); P.G[i].show(); P.G[i].label(""+i/2);}
-   // pen(green, 5); if (i%2==0 && i+1!=P.nv) P.G[i].show(n(V(P.G[i+1], P.G[i])));
+  rot = n(V(P.G[1], P.G[2]))/400.0/(float)numPts;
+  
+  if(!animating) t=numPts;
+  if(animating&&!party) {t+=0.003*numPts; if(t>=numPts) {t=numPts; animating=false;party=false;}} 
+  if(animating&&party) {t+=0.05; if(t>=numPts) {t=numPts; animating=false;party=false;}} 
+  for (int i=0;i<P.nv-3;++i) {
+    pen(blue, 1); edge(P.G[3 + i%(P.nv-3)], P.G[3 + (i+1)%(P.nv-3)]);
     }
-    
-  for (int i=1;i<10;++i) {
-    pt extrPt = extrapolateTo(P.nv/2+i);
-    pen(pink, 5); extrPt.show(); extrPt.label(""+P.nv/2+i);
+  
+  vec r = V(P.G[0], P.G[1]);
+  pt lastpr = P(P.G[0],r);
+  pt c = P.G[0];
+  int currPt = 0;
+  if (!party)
+  for (float s=0.0;s<t;s+=0.001) {
+    currPt = (int)s;
+    c = L(P.G[3 + currPt%(P.nv-3)], P.G[3 + (currPt+1)%(P.nv-3)], s-(float)currPt);
+    r.rotateBy(rot);
+    pen(red, 2); edge(lastpr, P(c,r));
+    lastpr = P(c,r);
     }
-  pen(red, 5); P.G[P.pv].show();
+  
+  if (party) 
+  for (float s=0.0;s<t;s+=0.1) {
+    currPt = (int)s;
+    c = L(P.G[3 + currPt%(P.nv-3)], P.G[3 + (currPt+1)%(P.nv-3)], s-(float)currPt);
+    r.rotateBy(rot);
+    for (int i=0;i<P.nv-3;++i) {
+      pen(blue, 1); edge(P.G[3 + i%(P.nv-3)], P(c,r));
+      }
+    lastpr = P(c,r);
+    }
+  
+  //pt pr = P(S.G[0], r);
+  // S.G[1] = pr;
+  if (!animating) {
+    pen(green, 5); P.G[0].show(n(r));
+    pen(pink, 5); arrow(P.G[1], P.G[2]);
+    pen(red, 5); P.G[0].show(); P.G[1].show();
+    }
+  else {
+    pen(red, 5); P(c,r).show();
+    }
   if(snapPic) {endRecord(); snapPic=false;} // end saving a .pdf of the screen
 
   fill(black); displayHeader();
@@ -54,17 +88,12 @@ void keyPressed() { // executed each time a key is pressed: sets the "keyPressed
   if(key=='!') snapPicture(); // make a picture of the canvas and saves as .jpg image
   if(key=='`') snapPic=true; // to snap an image of the canvas and save as zoomable a PDF
   if(key=='~') { filming=!filming; } // filming on/off capture frames into folder FRAMES 
-  if(key=='a') {animating=true; f=0; t=0;}  
+  if(key=='a') {animating=true; f=0; t=0.0;}  
   if(key=='s') P.savePts("data/pts");   
   if(key=='l') P.loadPts("data/pts"); 
-  if(key=='1') linear=!linear;
-  if(key=='2') circular=!circular;
-  if(key=='3') beautiful=!beautiful;
-  if(key=='4') car=!car;
-  if(key=='j') jarek=!jarek;
-  if(key=='5') hermite=!hermite;
   if(key=='Q') exit();  // quit application
-  if(key=='i') insertPt();
+  if(key=='i') {++numPts; P.addPt(P(Mouse())); change=true;}
+  if(key=='j') {animating=true; f=0; t=0.0; party=true;}
   change=true; // to make sure that we save a movie frame each time something changes
   }
 
@@ -74,7 +103,7 @@ void mousePressed() {  // executed when the mouse is pressed
   }
 
 void mouseDragged() {
-  if (!keyPressed || (key=='a')) P.dragPicked();   // drag selected point with mouse
+  if (!keyPressed || (key=='a')) {P.dragPicked(); P.G[0] = P.G[3]; P.G[3] = P.G[0];} // drag selected point with mouse
   if (keyPressed) {
       if (key=='.') f+=2.*float(mouseX-pmouseX)/width;  // adjust current frame   
       if (key=='t') P.dragAll(); // move all vertices
@@ -83,44 +112,15 @@ void mouseDragged() {
       }
   change=true;
   }  
-
-void insertPt() {  // executed when the mouse is pressed
-  P.addPt(P(Mouse()));
-  P.addPt(P(Mouse().x+15.0, Mouse().y));
-  System.out.println("HI");
-  change=true;
-  }
-
-pt extrapolateTo(int x) {
-  pt nodes[] = P.G;
-  int n = P.nv/2;
   
-  float extrapolatedx = 0.f;
-  float extrapolatedy = 0.f;
-  for (int i=0;i<n;++i) {
-    float temp = 1;
-    for (int j=0;j<n;++j) {
-      if (i!=j) {
-        temp = temp*(x-j-1)/(i+1-j-1);
-        }
-      }
-    extrapolatedx += nodes[i*2].x*temp;
-    extrapolatedy += nodes[i*2].y*temp;
-    }
-  System.out.println("P:" + extrapolatedx + " " + extrapolatedy);
-  return P(extrapolatedx, extrapolatedy);
-  }
-
-
 //**************************** text for name, title and help  ****************************
-String title ="CA 2015 P1: Interpolation", 
+String title ="CA 2015 P2: Really Cool Patterns for Really Cool People", 
        name ="Student: James Moak, Deep Ghosh",
        menu="?:(show/hide) help, a: animate, `:snap picture, ~:(start/stop) recording movie frames, Q:quit",
-       guide="drag:edit P&V, t/r/z:trans/rotate/zoom all, 1/2/3/4/5:toggle linear/circular/beautiful/car/hermite, j:party-mode"; // help info
+       guide="drag:edit P&V, t/r/z:trans/rotate/zoom all, i:insert point, j:party-mode"; // help info
 
 void drawObject(pt P, vec V) {
   beginShape(); 
-    if (jarek) texture(jarekImg);
     v(P(P(P,1,V),0.25,R(V)), 0, 0);
     v(P(P(P,1,V),-0.25,R(V)), 1, 0);
     v(P(P(P,-1,V),-0.25,R(V)), 1, 1);
